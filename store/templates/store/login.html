@@ -1,0 +1,25 @@
+{% extends 'store/main.html' %}
+{% load static %}
+{% load my_filters %}
+{% block content %}
+    <h3>Proceda a Entrada na Nossa Padaria</h3>
+    Para solicitar seu cadastro envie um e-mail para ... com seu nome completo, telefone de contato, endereço para entrega e cidade.
+    <b>Importante</b>: Possuímos pontos que atendemos certifique-se que o endereço corresponde a um deles.
+    <br /><br />
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        {% for message in messages %}
+            <div class="alert alert-danger" role="alert">{{message}}</div>        
+        {% endfor %}
+        <div class="form-group">
+            <label for="nome">Seu E-mail</label>
+            <input type="text" class="form-control" id="email" name="email" aria-describedby="nomeHelp" placeholder="E-mail cadastrado">
+            <small id="nomeHelp" class="form-text text-muted">Não possui cadastro? Solicite.</small>
+        </div>
+        <div class="form-group">
+            <label for="exampleInputPassword1">Sua Senha</label>
+            <input type="password" class="form-control" id="senha" name="senha" placeholder="Senha">
+        </div>
+        <button type="submit" class="btn btn-primary">Entrar</button>
+    </form>
+{% endblock content %}

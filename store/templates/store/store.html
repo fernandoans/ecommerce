@@ -1,0 +1,35 @@
+{% extends 'store/main.html' %}
+{% load static %}
+{% load my_filters %}
+{% block content %}
+  <h3>Nossos Pães</h3>
+  {%if autenticado%}
+  Bem Vind{{cliente.adjetivo}} de volta {{cliente.nome}}, é um prazer tê-l{{cliente.adjetivo}} aqui conosco novamente.
+  {%else%}
+  Lhe damos as Boas Vindas a <b>Pães do Éden</b>, proceda a <b>Entrada</b> em nossa loja para iniciar seus pedidos ou simplesmente veja nossas delícias.
+  {%endif%}
+  {% for message in messages %}
+      <div 
+      {% if message.tags == "success" %} class="alert alert-success"{% endif %}
+      {% if message.tags == "error" %} class="alert alert-danger"{% endif %}
+      role="alert">{{message}}</div>        
+  {% endfor %}
+  <div class="row">
+   <div class="row">
+      {% for produto in produtos %}
+      <div class="col-lg-4">
+         <img class="thumbnail" src="{{produto.imageURL}}">
+         <div class="box-element product">
+            <h6><strong>{{produto.nome}}</strong></h6>
+            <hr>
+            {%if autenticado%}
+            <button class="btn btn-outline-secondary add-btn" onclick="alert('{{produto.id}}');">Adicionar</button>
+            {%endif%}
+            <a class="btn btn-outline-success" href="#">Detalhar</a>
+            <h4 style="display: inline-block; float: right"><strong>{{produto.preco | currency}}</strong></h4>
+         </div>
+      </div>
+      {% endfor %}
+   </div>
+  </div>
+{% endblock content %}
