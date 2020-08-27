@@ -4,24 +4,23 @@ import json
 from .models import *
 from django.contrib import messages
 
-autenticado = False
-# Create your views here.
+# Componentes da Loja
+cliente = Cliente
+ordem = {'get_car_total': 0, 'get_car_itens': 0, 'shipping': False}
+carItens = ordem['get_car_itens']
 
 
 def store(request):
-    if testarAutenticado(request):
+    try:
+        autenticado = request.session['autenticado']
+    except:
+        autenticado = False
+
+    if autenticado:
         clienteId = request.session['cliente']
         cliente = Cliente.objects.get(id=clienteId)
-        ordem, created = Ordem.objects.get_or_create(
-            cliente=cliente, completo=False)
-        itens = ordem.ordemitem_set.all()
+        ordem = Ordem.objects.get(cliente=cliente, completo=False)
         carItens = ordem.get_car_itens
-    else:
-        # Create empty cart for now for non-logged in user
-        items = []
-        cliente = Cliente
-        ordem = {'get_car_total': 0, 'get_car_itens': 0, 'shipping': False}
-        carItens = ordem['get_car_itens']
 
     produtos = Produto.objects.all()
     context = {'produtos': produtos,
@@ -29,71 +28,88 @@ def store(request):
     return render(request, 'store/store.html', context)
 
 
-def escolher(request):
-    print('Aqui')
-    return store(request)
+def add_item(request):
+    # Dados do Formulário
+    data = json.loads(request.body)
+    produtoId = data['produtoId']
+    # Dados Locais
+    produto = Produto.objects.get(id=produtoId)
+    clienteId = request.session['cliente']
+    cliente = Cliente.objects.get(id=clienteId)
+    ordem_qs = Ordem.objects.filter(cliente=cliente, completo=False)
+    if ordem_qs.exists():
+        ordem = ordem_qs[0]
+    else:
+        ordem = Ordem.objects.create(cliente=cliente, completo=False)
+    itens = OrdemItem.objects.filter(ordem=ordem, produto=produto)
+    if itens.exists():
+        ordemItem = itens[0]
+        ordemItem.quantidade = (ordemItem.quantidade + 1)
+        ordemItem.save()
+    else:
+        ordemItem = OrdemItem.objects.create(
+            produto=produto, ordem=ordem, quantidade=1)
+
+    messages.success(request, produto.nome + ' foi adicionado com sucesso!')
+    return JsonResponse('sucesso', safe=False)
+
+
+def upd_item(request):
+    # Dados do Formulário
+    data = json.loads(request.body)
+    produtoId = data['produtoId']
+    acao = data['acao']
+    # Dados Locais
+    clienteId = request.session['cliente']
+    cliente = Cliente.objects.get(id=clienteId)
+    produto = Produto.objects.get(id=produtoId)
+    ordem = Ordem.objects.get(cliente=cliente, completo=False)
+    # Localiza o Item
+    itens = OrdemItem.objects.filter(ordem=ordem, produto=produto)
+    # Dispara a ação
+    for ordemItem in itens:
+        if acao == 'add':
+            ordemItem.quantidade = (ordemItem.quantidade + 1)
+        elif acao == 'del':
+            ordemItem.quantidade = (ordemItem.quantidade - 1)
+        ordemItem.save()
+        if ordemItem.quantidade <= 0:
+            ordemItem.delete()
+
+    return JsonResponse('sucesso', safe=False)
 
 
 def carrinho(request):
     clienteId = request.session['cliente']
     cliente = Cliente.objects.get(id=clienteId)
-    ordem, created = Ordem.objects.get_or_create(
-        cliente=cliente, completo=False)
-    itens = ordem.ordemitem_set.all()
+    ordem = Ordem.objects.get(cliente=cliente, completo=False)
     carItens = ordem.get_car_itens
     if carItens != 0:
-        context = {'items': itens, 'ordem': ordem, 'carItens': carItens}
+        itens = ordem.ordemitem_set.all()
+        # Monta o Contexto e chama a tela
+        context = {'carItens': carItens, 'ordem': ordem, 'itens': itens,
+                   'autenticado': True, 'cliente': cliente}
         return render(request, 'store/cart.html', context)
     else:
-        messages.erro(
-            request, 'Sinto muito, mas você ainda não possui pedidos a finalizar!')
-
-    produtos = Produto.objects.all()
-    context = {'produtos': produtos,
-               'carItens': carItens, 'autenticado': request.session['autenticado'], 'cliente': cliente}
-    return render(request, 'store/store.html', context)
+        messages.error(request, 'Não existem pedidos a finalizar!')
+        produtos = Produto.objects.all()
+        # Monta o Contexto e chama a tela
+        context = {'produtos': produtos,
+                   'carItens': carItens, 'autenticado': True, 'cliente': cliente}
+        return render(request, 'store/store.html', context)
 
 
 def checkout(request):
-    if autenticado:
-        clienteId = request.session['cliente']
-        cliente = Cliente.objects.get(id=clienteId)
-        ordem, created = Ordem.objects.get_or_create(
-            cliente=cliente, completo=False)
-        itens = ordem.orderitem_set.all()
-        carItens = ordem.get_car_itens
-    else:
-        # Create empty cart for now for non-logged in user
-        items = []
-        order = {'get_cart_total': 0, 'get_cart_items': 0, 'shipping': False}
-        carItens = order['get_cart_items']
-
-    context = {'items': items, 'order': order, 'carItens': carItens}
+    # Localiza os Dados
+    clienteId = request.session['cliente']
+    cliente = Cliente.objects.get(id=clienteId)
+    ordem = Ordem.objects.get(cliente=cliente, completo=False)
+    itens = ordem.ordemitem_set.all()
+    carItens = ordem.get_car_itens
+    # Monta o Contexto e chama a tela
+    context = {'itens': itens, 'ordem': ordem,
+               'carItens': carItens, 'cliente': cliente}
     return render(request, 'store/checkout.html', context)
-
-
-def updateItem(request):
-    data = json.loads(request.body)
-    produtoId = data['produto']
-    acao = data['acao']
-    cliente = request.user.customer
-    produto = Produto.objects.get(id=produtoId)
-    ordem, created = Ordem.objects.get_or_create(
-        cliente=cliente, completo=False)
-
-    ordemItem, created = OrdemItem.objects.get_or_create(
-        ordem=ordem, produto=produto)
-
-    if acao == 'add':
-        ordemItem.quantidade = (ordemItem.quantidade + 1)
-    elif acao == 'remove':
-        ordemItem.quantidade = (ordemItem.quantidade - 1)
-    ordemItem.save()
-
-    if ordemItem.quantity <= 0:
-        ordemItem.delete()
-
-    return JsonResponse('Item adcionado com sucesso', safe=False)
 
 
 def entrar(request):
@@ -138,17 +154,7 @@ def sair(request):
     ordem = {'get_car_total': 0, 'get_car_itens': 0, 'shipping': False}
     carItens = ordem['get_car_itens']
     request.session.clear
-    autenticado = False
-
     produtos = Produto.objects.all()
-    context = {'produtos': produtos,
-               'carItens': carItens, 'autenticado': autenticado, 'cliente': cliente}
+    context = {'produtos': produtos, 'carItens': carItens,
+               'autenticado': False, 'cliente': cliente}
     return render(request, 'store/store.html', context)
-
-
-def testarAutenticado(request):
-    try:
-        autenticado = request.session['autenticado']
-        return autenticado
-    except:
-        return False

@@ -10,8 +10,8 @@
             <br>
             <table class="table">
                <tr>
-                  <th><h5>Items: <strong>{{ordem.get_cart_items}}</strong></h5></th>
-                  <th><h5>Total:<strong> ${{ordem.get_cart_total | currency}}</strong></h5></th>
+                  <th><h5>Items: <strong>{{ordem.get_car_itens}}</strong></h5></th>
+                  <th><h5>Total:<strong> {{ordem.get_car_total | currency}}</strong></h5></th>
                   <th>
                      <a  style="float:right; margin:5px;" class="btn btn-success" href="{% url 'checkout' %}">Pagamento</a>
                   </th>
@@ -29,20 +29,19 @@
                <div style="flex:1"><strong>Quantidade</strong></div>
                <div style="flex:1"><strong>Total</strong></div>
             </div>
-            {% for item in items %}
+            {% for item in itens %}
             <div class="cart-row">
                <div style="flex:2"><img class="row-image" src="{{item.produto.imageURL}}"></div>
                <div style="flex:2"><p>{{item.produto.nome}}</p></div>
-               <div style="flex:1"><p>${{item.product.preco | currency}}</p></div>
+               <div style="flex:1"><p>{{item.produto.preco | currency}}</p></div>
                <div style="flex:1">
                   <p class="quantity">{{item.quantidade}}</p>
                   <div class="quantity">
-                     <img data-product="{{item.produto.id}}" data-action="add" class="chg-quantity update-cart" src="{% static  'images/arrow-up.png' %}">
-               
-                     <img data-product="{{item.produto.id}}" data-action="remove" class="chg-quantity update-cart" src="{% static  'images/arrow-down.png' %}">
+                     <img data-product="{{item.produto.id}}" data-action="add" class="chg-quantity update-cart" src="{% static 'images/arrow-up.png' %}" onclick="updateProduto({{item.produto.id}}, 'add');">
+                     <img data-product="{{item.produto.id}}" data-action="remove" class="chg-quantity update-cart" src="{% static 'images/arrow-down.png' %}" onclick="updateProduto({{item.produto.id}}, 'del');">
                   </div>
                </div>
-               <div style="flex:1"><p>${{item.get_total | currency}}</p></div>
+               <div style="flex:1"><p>{{item.get_total | currency}}</p></div>
             </div>
             {% endfor %}
          </div>

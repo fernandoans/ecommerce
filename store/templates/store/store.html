@@ -23,7 +23,7 @@
             <h6><strong>{{produto.nome}}</strong></h6>
             <hr>
             {%if autenticado%}
-            <button class="btn btn-outline-secondary add-btn" onclick="alert('{{produto.id}}');">Adicionar</button>
+            <button class="btn btn-outline-secondary add-btn" onclick="addItem({{produto.id}});">Adicionar</button>
             {%endif%}
             <a class="btn btn-outline-success" href="#">Detalhar</a>
             <h4 style="display: inline-block; float: right"><strong>{{produto.preco | currency}}</strong></h4>
