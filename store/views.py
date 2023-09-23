@@ -16,15 +16,21 @@ def store(request):
     except:
         autenticado = False
 
+    produtos = Produto.objects.all()
+    
     if autenticado:
         clienteId = request.session['cliente']
         cliente = Cliente.objects.get(id=clienteId)
         ordem = Ordem.objects.get(cliente=cliente, completo=False)
         carItens = ordem.get_car_itens
-
-    produtos = Produto.objects.all()
-    context = {'produtos': produtos,
-               'carItens': carItens, 'autenticado': autenticado, 'cliente': cliente}
+        context = {
+            'produtos': produtos,
+            'carItens': carItens,
+            'autenticado': autenticado,
+            'cliente': cliente
+        }
+    else:
+        context = {'produtos': produtos, 'cliente': "Você não está logado!"}
     return render(request, 'store/store.html', context)
 
 
